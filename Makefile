@@ -1,19 +1,24 @@
 CC = gcc
+CCP = g++
 LIBS = -lglfw -lvulkan
 INCL = -I./include/
 ARGS = -fPIC
 
 SRCS = $(shell find ./src -name '*.c')
-OBJS = $(SRCS:.c=.o)
+PSRCS = $(shell find ./src -name '*.cpp')
+OBJS = $(SRCS:.c=.o) ${PSRCS:.cpp=.o}
 INCLS = $(shell find ./include -name '*.h')
 
 all: libpolygl.so
 
 libpolygl.so: ${OBJS}
-	${CC} ${LIBS} --shared -o $@ $^ ${ARGS}
+	${CCP} ${LIBS} --shared -o $@ $^ ${ARGS}
 
 %.o: %.c ${INCLS}
 	${CC} -c -o $@ $< ${INCL} ${ARGS}
+
+%.o: %.cpp ${INCLS}
+	${CCP} -c -o $@ $< ${INCL} ${ARGS}
 
 clean: ${OBJS}
 	rm $^

@@ -6,33 +6,67 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#define CTX(ctx) ((GLFWwindow*)ctx)
+#define __CTX __window_ctx
+#define _CTX(ctx) ((__window_ctx*)ctx)
+#define CTX(ctx) (_CTX(ctx)->window)
+#define VCTX(ctx) (_CTX(ctx)->vctx)
 
 #include <stdlib.h>
 #include <stdio.h>
-#define LOG(str, ...) printf("INFO: "str"\n", __VA_ARGS__)
-#define ERR(str, ...) fprintf(stderr,"ERROR: "str"\n", __VA_ARGS__)
+#include <string.h>
+#include <limits.h>
+#include <time.h>
+#define LOGW(str) printf("INFO: " str "\n");
+#define LOG(str, ...) printf("INFO: " str "\n", __VA_ARGS__)
+#define ERRW(str) fprintf(stderr,"ERROR: " str "\n");
+#define ERR(str, ...) fprintf(stderr,"ERROR: " str "\n", __VA_ARGS__)
+
 
 #include "vulkan_device_setup.h"
 
-VulkanCtx globalVulcanCtx;
+struct VulkanCtx {
+  VkInstance instance;
+  VkDevice device;
+  VkSurfaceKHR surface;
+  VkCommandPool commandPool;
+};
+
+typedef struct {
+  GLFWwindow *window;
+  VulkanCtx vctx;
+} __window_ctx;
+
 
 // init
   void poly_init() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // for vulcan
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    vulkanInit(&globalVulcanCtx);
   }
   void poly_deinit() {
-    vulkanTerminate(&globalVulcanCtx);
     glfwTerminate();
   }
 // context init
   POLY_CTX *poly_create_ctx(int height, int width, const char *name) {
-    return (void*)glfwCreateWindow(width, height, name, NULL, NULL);
+    __CTX *ctx = (__CTX*)malloc(sizeof(__CTX));
+    GLFWwindow *window = glfwCreateWindow(width, height, name, NULL, NULL);
+
+    if (window == NULL) {
+      return NULL;
+    } else {
+      
+      vulkanInit(&ctx->vctx, window);
+    }
+
+    ctx->window = window;
+    return ctx;
   }
-  void poly_delete_ctx(POLY_CTX *ctx) { glfwDestroyWindow(CTX(ctx)); }
+  void poly_delete_ctx(POLY_CTX *ctx) { 
+    vulcanTerminate(&VCTX(ctx));
+    glfwDestroyWindow(CTX(ctx)); 
+    
+    free(ctx);
+  }
 // context manipulation
   bool poly_ctx_should_close(POLY_CTX *ctx) { return glfwWindowShouldClose(CTX(ctx)); }
   void poly_ctx_close(POLY_CTX *ctx) { glfwSetWindowShouldClose(CTX(ctx),true); }
@@ -58,12 +92,12 @@ VulkanCtx globalVulcanCtx;
     fseek(vertFile, 0, SEEK_SET);
     fseek(fragFile, 0, SEEK_SET);
 
-    char *vertBuffer = malloc(vertSize);
+    char *vertBuffer = (char*)malloc(vertSize);
     if (vertBuffer == NULL) {
       ERR("vert File Buffer Couldn't be Allocated for size %zu", vertSize);
       return 3;
     }
-    char *fragBuffer = malloc(fragSize);
+    char *fragBuffer = (char*)malloc(fragSize);
     if (fragBuffer == NULL) {
       ERR("frag File Buffer Couldn't be Allocated for size %zu", fragSize);
       return 4;
