@@ -1,22 +1,29 @@
 #include "polygl.h"
+#include <stdio.h>
 
 int main() {
+  poly_error_t err;
+  
   // initalize library
-  poly_init();
-
-  // open context
-  POLY_CTX *ctx = poly_create_ctx(400, 600, "Welcome to Poly Graphics");
-
-  int status = poly_graphic_pipeline(ctx,"shaders/simple_shader.vert.spv","shaders/simple_shader.frag.spv");
-
-  // main context loop
-  while (!poly_ctx_should_close(ctx)) {
-    poly_poll();
+  poly_ctx_t *ctx;
+  err = poly_instance(&ctx, "PolyGL Testing", "No Engine", true);
+  if (err != POLY_GOOD) {
+    printf("%s    ", strpolyerr(err));
+    poly_destroy(ctx);
+    return 1;
   }
 
-  // close context
-  poly_delete_ctx(ctx);
+  // select device and create interface
+
+  // initalize window
+
+  // main
+  
+
+  // destroy window
+
+  // destroy device interface
 
   // de-initalize library
-  poly_deinit();
+  poly_destroy(ctx);
 }
