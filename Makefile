@@ -1,5 +1,5 @@
 CC = gcc
-LIBS = ./ext/glfw-3.4/build/src/libglfw3.a -lvulkan
+LIBS = -lglfw -lvulkan
 INCL = -I./include/
 ARGS = -fPIC
 

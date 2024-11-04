@@ -1,10 +1,12 @@
 CC = gcc
+CCP = g++
 SC = glslc
 LIBS = -lpolygl -lglfw -lvulkan
 INCL = -I./include/
 
 SRCS = $(shell find . -name '*.c')
-OUTS = $(SRCS:.c=.out)
+SRCSPP = $(shell find . -name '*.cpp')
+OUTS = $(SRCS:.c=.out) $(SRCSPP:.cpp=.outpp)
 
 VERT_SHADERS_SRC = $(shell find ./shaders -name '*.vert')
 VERT_SHADERS = $(VERT_SHADERS_SRC:.vert=.vert.spv)
@@ -21,3 +23,6 @@ all: ${OUTS} ${VERT_SHADERS} ${FRAG_SHADERS}
 
 %.out: %.c /usr/local/lib/libpolygl.so
 	${CC} -o $@ $< ${INCL} ${LIBS}
+
+%.outpp: %.cpp /usr/local/lib/libpolygl.so
+	${CCP} -o $@ $< ${INCL} ${LIBS}
