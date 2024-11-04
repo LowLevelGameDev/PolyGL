@@ -1,24 +1,20 @@
 CC = gcc
-CCP = g++
-LIBS = -lglfw -lvulkan
+LIBS = ./ext/glfw-3.4/build/src/libglfw3.a -lvulkan
 INCL = -I./include/
 ARGS = -fPIC
 
 SRCS = $(shell find ./src -name '*.c')
-PSRCS = $(shell find ./src -name '*.cpp')
-OBJS = $(SRCS:.c=.o) ${PSRCS:.cpp=.o}
+OBJS = $(SRCS:.c=.o)
 INCLS = $(shell find ./include -name '*.h')
 
 all: libpolygl.so
 
 libpolygl.so: ${OBJS}
-	${CCP} ${LIBS} --shared -o $@ $^ ${ARGS}
+	${CC} ${LIB_PATHS} ${LIBS} --shared -o $@ $^ ${ARGS}
 
 %.o: %.c ${INCLS}
 	${CC} -c -o $@ $< ${INCL} ${ARGS}
 
-%.o: %.cpp ${INCLS}
-	${CCP} -c -o $@ $< ${INCL} ${ARGS}
 
 clean: ${OBJS}
 	rm $^

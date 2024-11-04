@@ -5,6 +5,14 @@
   #define POLY_API
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct poly_ctx_t;
 typedef struct poly_ctx_t poly_ctx_t;
 
@@ -13,10 +21,6 @@ typedef struct poly_pipe_t poly_pipe_t;
 
 struct poly_rctx_t;
 typedef struct poly_rctx_t poly_rctx_t;
-
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
 
 // ------------ Error Handling ------------ //
   typedef size_t poly_error_t;
@@ -63,4 +67,7 @@ typedef struct poly_rctx_t poly_rctx_t;
   void poly_aquire_frame(poly_rctx_t *rctx, poly_pipe_t *pipe, poly_ctx_t *ctx, uint32_t currentFrame);
 // END
 
+#ifdef __cplusplus
+}
 #endif
+#endif // Header Guard
