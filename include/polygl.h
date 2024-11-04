@@ -1,16 +1,21 @@
 #ifndef __POLYGL_IMPL
 #define __POLYGL_IMPL
 
-#ifndef POLY_API
-  #define POLY_API
+#ifdef __cplusplus
+  #pragma once
+
+  #include <cstdint>
+  #include <cstddef>
+
+  extern "C" {
+#else
+  #include <stdbool.h> // only needed in c
+  #include <stdint.h>
+  #include <stddef.h>
 #endif
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-
-#ifdef __cplusplus
-extern "C" {
+#ifndef POLY_API
+  #define POLY_API
 #endif
 
 struct poly_ctx_t;
@@ -68,6 +73,6 @@ typedef struct poly_rctx_t poly_rctx_t;
 // END
 
 #ifdef __cplusplus
-}
-#endif
+  }
 #endif // Header Guard
+#endif

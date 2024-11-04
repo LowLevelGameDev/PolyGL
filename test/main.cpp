@@ -1,4 +1,4 @@
-#include "polygl.h"
+#include <polygl.h>
 #include <stdio.h>
 
 int main() {
@@ -21,7 +21,7 @@ int main() {
 
   // initalize shader pipeline
   poly_pipe_t *pipe;
-  ppipe_create(ctx,&pipe,"client/shaders/simple_shader.vert.spv","client/shaders/simple_shader.frag.spv");
+  ppipe_create(ctx,&pipe,"shaders/simple_shader.vert.spv","shaders/simple_shader.frag.spv");
 
   // initalize renderer
   poly_rctx_t *rctx;
