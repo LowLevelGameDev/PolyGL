@@ -3,4 +3,4 @@
 *.out
 *.outpp
 __*
-ext/glfw-3.4/
+build/

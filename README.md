@@ -1,26 +1,24 @@
 # PolyGL
-My own graphics library built in tandem with this game until it is eventually split off to its own project. <br>
+My own graphics library built in C <br>
 
-## Linux
-Relies on vulkan. <br>
-<br>
-Vulkan will not have to be installed (unless you are compiling from scratch), <br>
-You will need compatible graphic drivers to work with vulkan. <br>
+## Window API
+#### Linux
+Creates windows relying on wayland and X11
 
-## Windows
-Uses Windows API
+#### Windows
+Creates windows relying on win32 api
 
-## *BSD
-Relies on vulkan.
-<br>
-Vulkan will not have to be installed (unless you are compiling from scratch), <br>
-You will need compatible graphic drivers to work with vulkan. <br>
+#### OSX
+Creates windows relying on cocoa
 
-## OSX
+## Graphics API
+#### OpenGL
+Working on vulkan for now, this will be worked on later for backwards compatibility
 
-## Andriod
+#### Vulkan
+Relies on the vulkan sdk
 
-## IOS
 
-## Web
-Web Assembly <br>
+## Intermediate Graphics API
+To work with multiple graphic library backends a universal intermediate shading language compiler should be built to compile shaders into a target format for polygl.
+this can be done seperatly from polygl and doesn't have to be handled any differently, so for now this will be put on the backburner and be worked on once the library is ready for directX 11 and directX 12.
