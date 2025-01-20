@@ -84,7 +84,6 @@ struct pwctx {
   size_t total;
   size_t items;
   size_t itemsize;
-  
 
   // window creation (intended for internal use)
   poly_err_t (*_create)(struct pwin*, struct pwinconfig*);
@@ -125,32 +124,84 @@ typedef long int pwin_graphics_backend_t;
   // DirectX* and windows GDI may be implemented when i lose my mind
 // END
 
+struct pg_physical_device {
+  // --- identity device info --- //
+  const char *deviceName;       // human readable device name
+  size_t vendorId;              // 0 if not available
+  size_t deviceId;              // 0 if not available
+  size_t driverVersion;         // device driver version
+  int deviceType;               // 0 not available, 1: integrated, 2: discrete, 3: virtual, 4: CPU
+
+  // --- broad device capabilites --- //
+  size_t totalMemory;          // Total memory available on the device
+  size_t maxMemoryAllocation;  // Maximum memory allocation size
+  size_t apiVersion;           // Version of the graphics API supported by the device
+  size_t maxImageDimension2D;  // Maximum 2D image dimension supported
+  size_t maxImageDimension3D;  // Maximum 3D image dimension supported
+
+  // --- flags --- //
+  int supportsGeometryShader;     // -1 if not set,  0 if geometry shader is supported,     1 if geometry shader is not supported
+  int supportsTessellationShader; // -1 if not set,  0 if tessellation shader is supported, 1 if tessellation shader is not supported
+  int supportsComputeShader;      // -1 if not set,  0 if compute shader is supported,      1 if compute shader is not supported
+  int supportsRayTracing;         // -1 if not set,  0 if ray tracing is supported,         1 if ray tracing is not supported
+  int supportsMeshShader;         // -1 if not set,  0 if mesh shader is supported,         1 if mesh shader is not supported
+
+  // TODO: Probably add more
+  // TODO: Extensions need to be supported
+};
+
+
 struct pgraphics {
+  // select physical device
+  poly_err_t (*get_physical_devices)(struct pgraphics*, struct pg_physical_device**);
+
+  // create logical device
+  // * a logical device is part of the internal api used by the backend graphics api
+  poly_err_t (*create_logical_device)(struct pgraphics*, struct pg_physical_device*);
+
+  // surface
+  // * annoyingly os dependent but should be the only section that is
+  poly_err_t (*attach_to_surface_win32)(struct pgraphics*);
+  poly_err_t (*attach_to_surface_wayland)(struct pgraphics*);
+  poly_err_t (*attach_to_surface_x11)(struct pgraphics*);
+  poly_err_t (*attach_to_surface_cocoa)(struct pgraphics*);
+
+  // shader pipeline
+  // * vert and frag pipeline creation etc...
+
+  // command buffers
+  // * record a section of commands
+  // * (i believe opengl doesn't support this but you will still use a command buffer...)
+  // * (it will just have to be translated at runtime)
+  // * (a sacrifice for speed will unfortunately have to be made for these legacy APIs)
+
+  // synchronization
+  // synchronize the device
+  // * (i believe opengl also hides away sync functionality so this will probably just be ignored for opengl)
+  // * (another small sacrifice for a cross graphics api api)
+
+  // data
   struct pg_device *devices; // list of available devices
   struct pg_logical_device *device; // current rendering device
 
   struct pg_pipe *pipes;
   struct pg_command *commands;
 
-  // select physical device
-
-  // create logical device
-
-  // surface
-
-  // shader pipeline
-
-  // command buffers
-
-  // synchronization
-
-  // other
-  void (*sync)(struct pgraphics*); // wait for gpu to complete current actions
-  void (*aquire_frame)(struct pgraphics*); // aquire animation frame
+  // flags
+  int _debug; // i.e. vulkan validation layers will be used on true
 };
 
-size_t pg_sizeof_opengl(); poly_err_t pg_create_opengl(struct pgraphics *ctx);
-size_t pg_sizeof_vulkan(); poly_err_t pg_create_vulkan(struct pgraphics *ctx);
+// initalization
+// Open GL
+size_t     pg_sizeof_opengl(); 
+poly_err_t pg_create_opengl(struct pgraphics *ctx);
+void       pg_delete_opengl(struct pgraphics *ctx);
+
+// Vulkan
+size_t     pg_sizeof_vulkan(); 
+poly_err_t pg_create_vulkan(struct pgraphics *ctx);
+void       pg_delete_vulkan(struct pgraphics *ctx);
+
 
 // -------------------------------- GUI API -------------------------------- //
 
