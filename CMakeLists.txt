@@ -43,6 +43,9 @@ endif()
 target_include_directories(polygl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(polygl_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+target_include_directories(polygl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.)
+target_include_directories(polygl_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.)
+
 # Examples
 set(EXAMPLE_SRCS examples/window.c)
 foreach(example ${EXAMPLE_SRCS})

@@ -1,130 +1,117 @@
 #include "polygl.h"
 #include <windows.h>
 #include <stdbool.h>
+#include "src/log.h"
+
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
+
 
 struct pwin_win32 {
   struct pwctx *class;
-  poly_err_t (*dlt)(struct pwin*);
-  poly_err_t (*open)(struct pwin*, int height, int width);
-  int        (*should_close)(struct pwin*);
-  poly_err_t (*callback)(struct pwin*, poly_callback_type_t, void *callback);
-  poly_err_t (*poll)(struct pwin*);
 
-  // Add needed global variables here
   HWND hwnd;
   int should_close_flag;
 };
 
-// Forward declare the window procedure
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-// Implement the functions
-void dlt(struct pwin *voidwin) {
-  // Clean up resources
-  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
-  if (win->hwnd != NULL) DestroyWindow(win->hwnd);
-  win->hwnd = NULL;
-}
-
-poly_err_t open(struct pwin *voidwin, struct pwinconfig *conf) {
-  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
-
-  if (win != NULL) {
-    win->dlt(voidwin);
-  }
-
-  // Create the window
-  HWND parent_hwnd = NULL;
-  if (conf->parent != NULL) {
-    parent_hwnd = ((struct pwin_win32*)conf->parent)->hwnd;
-  }
-
-  if (conf->width == 0) {
-    conf->width = CW_USEDEFAULT;
-  }
-  if (conf->height == 0) {
-    conf->height = CW_USEDEFAULT;
-  }
-
-  // Assuming you have allocated memory for char arrays
-  win->hwnd = CreateWindowEx(
-    0,                              // Optional window styles.
-    win->class->_classname,         // Window class
-    conf->text,                     // Window text
-    WS_OVERLAPPEDWINDOW,            // Window style
-    CW_USEDEFAULT, CW_USEDEFAULT,   // x, y
-    conf->width, conf->height,      // width, height
-    parent_hwnd,                    // Parent window    
-    NULL,                           // Menu
-    GetModuleHandle(NULL),          // Instance handle
-    NULL                            // Additional application data
-  );
-
-  if (win->hwnd == NULL) {
-    return POLY_ERR_WINDOW_CREATION_FAILURE;
-  }
-
-  ShowWindow(win->hwnd, SW_SHOW);
-
-  win->should_close_flag = false;
-  return 0;
-}
-
-poly_err_t callback(struct pwin *voidwin, poly_callback_type_t type, void *callback) {
-  // Implement callback handling as needed
-  return 0;
-}
-
-poly_err_t poll(struct pwin *voidwin) {
-  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
-
-  MSG msg = {};
-  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-    if (msg.message == WM_QUIT) {
-      win->should_close_flag = true;
-    }
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-  }
-  return 0;
-}
-
-int should_close(struct pwin *voidwin) {
-  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
-  return win->should_close_flag;
-}
-
-// Define the window procedure
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
-  case WM_DESTROY:
+    case WM_DESTROY:
       PostQuitMessage(0);
       return 0;
+    case WM_PAINT: {
+      PAINTSTRUCT ps;
+      HDC hdc = BeginPaint(hwnd, &ps);
+      FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+      EndPaint(hwnd, &ps);
+      return 0;
+    }
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-poly_err_t pwctx_create_win32  (struct pwctx *ctx, const char *_classname) {
-  WNDCLASS wc = {};
-  wc.lpfnWndProc = WindowProc;          // hwnd message callback
-  wc.hInstance = GetModuleHandle(NULL); // what is this?
-  wc.lpszClassName = _classname;        // class identifier
+poly_err_t win32_create_window(struct pwin *voidwin, struct pwinconfig *conf) {
+  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
 
-  RegisterClass(&wc);
+  HINSTANCE hInstance = GetModuleHandle(NULL);
 
-  // set ctx info
+  win->hwnd = CreateWindowEx(
+    0,                            // style
+    win->class->_classname,       // class window should be registered with
+    conf->text,                   // window label
+    WS_OVERLAPPEDWINDOW,          // type
+    CW_USEDEFAULT, CW_USEDEFAULT, // x, y
+    conf->width == 0 ? CW_USEDEFAULT : conf->width,   // width
+    conf->height == 0 ? CW_USEDEFAULT : conf->height, // height
+    NULL,                         // ?
+    NULL,                         // ?
+    hInstance,                    // instance
+    NULL                          // ?
+  );
+
+  if (!win->hwnd) {
+    return POLY_ERR_WINDOW_CREATION;
+  }
+
+  BOOL dark = TRUE; 
+  DwmSetWindowAttribute(win->hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+
+  ShowWindow(win->hwnd, SW_SHOW);
+  UpdateWindow(win->hwnd);
+
+  return POLY_ERR_GOOD;
+}
+
+void win32_delete_window(struct pwin *voidwin) {
+  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
+  DestroyWindow(win->hwnd);
+}
+
+poly_err_t win32_poll(struct pwctx *ctx) {
+  MSG msg;
+  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
+  return POLY_ERR_GOOD;
+}
+
+int win32_should_close(struct pwin *voidwin) {
+  struct pwin_win32 *win = (struct pwin_win32*)voidwin;
+  return !IsWindow(win->hwnd);
+}
+
+// defined in poly.c (internal api)
+extern poly_err_t __allocate_space(struct pwctx *ctx);
+
+poly_err_t pwctx_create_win32(struct pwctx *ctx, const char *_classname, size_t expected_window_count) {
+  ctx->itemsize = sizeof(struct pwin_win32);
+  ctx->total = expected_window_count;
+  ctx->items = 0;
+  ctx->buf = NULL;
+  __allocate_space(ctx);
+
   ctx->_classname = _classname;
+  ctx->_create = win32_create_window;
+  ctx->_dlt = win32_delete_window;
+  ctx->callback = NULL;
+  ctx->poll = win32_poll;
+  ctx->should_close = win32_should_close;
 
-  // set ctx buffer
-  ctx->buffer = NULL;
-  ctx->buffer_size = 0;
-  ctx->item_size = sizeof(struct pwin_win32);
+  HINSTANCE hInstance = GetModuleHandle(NULL);
 
-  // set ctx functions
-  ctx->_create = open;
-  ctx->_dlt = dlt;
-  ctx->callback = callback;
-  ctx->poll = poll;
-  ctx->should_close = should_close;
+  WNDCLASSEX wc = {0};
+  wc.cbSize = sizeof(WNDCLASSEX);
+  wc.lpfnWndProc = WindowProc;
+  wc.hInstance = hInstance;
+  wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);  // default icon
+  wc.hCursor = LoadCursor(NULL, IDC_ARROW);    // default cursor
+  wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+  wc.lpszClassName = _classname;
+
+  if (!RegisterClassEx(&wc)) {
+    return POLY_ERR_WINDOW_CLASS_CREATION;
+  }
+
   return POLY_ERR_GOOD;
 }

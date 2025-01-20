@@ -16,10 +16,10 @@ extern "C" {
 typedef long int poly_err_t;
 const char *strpolyerr(poly_err_t);
 // DEFINES ERRORS
-  #define POLY_ERR_WINDOW_CREATION_FAILURE -2
-  #define POLY_ERR_MEMORY_ALLOCATION_FAILURE -1
   #define POLY_ERR_GOOD 0
-  #define POLY_ERR_WARNING 1
+  #define POLY_ERR_MEMORY_ALLOCATION 1
+  #define POLY_ERR_WINDOW_CLASS_CREATION 2
+  #define POLY_ERR_WINDOW_CREATION 3  
 // END
 
 // -------------------------------- Window API -------------------------------- //
@@ -62,13 +62,8 @@ typedef long int poly_callback_type_t;
 // END
 
 // poly window
-struct pwin {
+struct pwin { // real defenitions are in src/window/*.c
   struct pwctx *class;
-  poly_err_t (*dlt)(struct pwin*);
-  poly_err_t (*open)(struct pwin*, int height, int width);
-  int        (*should_close)(struct pwin*);
-  poly_err_t (*callback)(struct pwin*, poly_callback_type_t, void *callback);
-  poly_err_t (*poll)(struct pwin*);
 };
 typedef struct pwin pwin_t;
 
@@ -77,33 +72,35 @@ struct pwinconfig {
   const char *text;
   struct pwin *parent;
 };
+typedef struct pwinconfig pwinconfig_t;
 
 // An easy multiple pwin manager to control multiple windows with a clean api
 struct pwctx {
-  size_t buffer_size; // complete buffer size
-  size_t item_size;   // pwin item size
-  size_t items; // current items in buffer
-  char *buffer;
-
-  // context info
+  // context info (could be needed for apis but also could be useful for debugging by organising windows into classes)
   const char *_classname;
 
-  // window creation
+  // window buffer
+  char *buf;
+  size_t total;
+  size_t items;
+  size_t itemsize;
+  
+
+  // window creation (intended for internal use)
   poly_err_t (*_create)(struct pwin*, struct pwinconfig*);
   void       (*_dlt)(struct pwin*);
 
-  // window manipulation
+  // window manipulation (user use)
   poly_err_t (*callback)(struct pwin*, poly_callback_type_t, void *callback);
-  poly_err_t (*poll)(struct pwin*);
+  poly_err_t (*poll)(struct pwctx*);
   int        (*should_close)(struct pwin*);
 };
 typedef struct pwctx pwctx_t;
 
 // context manipulation
 void       pwctx_gdlt(struct pwctx*); // delete all windows
-poly_err_t pwctx_gpoll(struct pwctx*); // poll all windows
 poly_err_t pwctx_gcallback(struct pwctx*, poly_callback_type_t, void *callback); // set a callback for all windows
-poly_err_t pwctx_set_buffer(struct pwctx*, size_t byte_size);
+int        pwctx_should_close(struct pwctx*); // checks if at least on window is still running and returns 1, if no windows are running 0
 
 poly_err_t pwctx_create_window(struct pwctx*, size_t*, struct pwinconfig*);
 poly_err_t pwctx_create_delete(struct pwctx*, size_t index);
@@ -111,10 +108,10 @@ poly_err_t pwctx_create_delete(struct pwctx*, size_t index);
 struct pwin *pwctx_get_window(struct pwctx*, size_t index);
 
 // context creation
-poly_err_t pwctx_create_win32  (struct pwctx *ctx, const char *_classname);
-poly_err_t pwctx_create_wayland(struct pwctx *ctx, const char *_classname);
-poly_err_t pwctx_create_x11    (struct pwctx *ctx, const char *_classname);
-poly_err_t pwctx_create_cocoa  (struct pwctx *ctx, const char *_classname);
+poly_err_t pwctx_create_win32  (struct pwctx *ctx, const char *_classname, size_t expected_window_count);
+poly_err_t pwctx_create_wayland(struct pwctx *ctx, const char *_classname, size_t expected_window_count);
+poly_err_t pwctx_create_x11    (struct pwctx *ctx, const char *_classname, size_t expected_window_count);
+poly_err_t pwctx_create_cocoa  (struct pwctx *ctx, const char *_classname, size_t expected_window_count);
 
 // context deletion
 void       pwctx_delete(struct pwctx*);
@@ -135,6 +132,19 @@ struct pgraphics {
   struct pg_pipe *pipes;
   struct pg_command *commands;
 
+  // select physical device
+
+  // create logical device
+
+  // surface
+
+  // shader pipeline
+
+  // command buffers
+
+  // synchronization
+
+  // other
   void (*sync)(struct pgraphics*); // wait for gpu to complete current actions
   void (*aquire_frame)(struct pgraphics*); // aquire animation frame
 };
